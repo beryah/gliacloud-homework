@@ -14,8 +14,8 @@ export const HighlightOverlay: React.FC = () => {
   }
 
   return (
-    <div className="absolute bottom-20 left-1/2 transform -translate-x-1/2 bg-black bg-opacity-80 px-6 py-3 rounded-lg max-w-4xl mx-4">
-      <p className="text-white text-center text-lg leading-relaxed">
+    <div className="absolute bottom-2 md:bottom-8 left-1/2 transform -translate-x-1/2 bg-black bg-opacity-80 px-3 md:px-6 py-2 md:py-3 rounded-lg max-w-xs sm:max-w-sm md:max-w-4xl mx-2 md:mx-4">
+      <p className="text-white text-center text-sm md:text-lg leading-relaxed break-words">
         {currentSentence.text}
       </p>
     </div>

@@ -1,83 +1,39 @@
 import React from 'react';
-import { Play, Pause, SkipForward, SkipBack } from 'lucide-react';
+import { Play, Pause } from 'lucide-react';
 import { HighlightOverlay } from './HighlightOverlay';
 import { useVideoSync } from '../hooks/useVideoSync';
 import { useHighlightStore } from '../store/highlightStore';
 import { formatTime, getTimePercentage } from '../utils/timeFormat';
 
 export const VideoPlayer: React.FC = () => {
-  const { 
-    videoData, 
-    selectedSentences, 
-    setVideoElement
-  } = useHighlightStore();
-  
-  const { 
-    currentTime, 
-    isPlaying, 
-    togglePlayPause,
-    seekToSentence,
-    getCurrentSentenceInfo,
-    currentSentenceIndex
-  } = useVideoSync();
+  const { videoData, selectedSentences, setVideoElement } = useHighlightStore();
+  const { currentTime, isPlaying, togglePlayPause } = useVideoSync();
 
   if (!videoData) {
     return (
       <div className="flex items-center justify-center h-full bg-black">
-        <p className="text-gray-400">No video loaded</p>
+        <p className="text-gray-400 text-sm md:text-base">No video loaded</p>
       </div>
     );
   }
 
   const progressPercentage = getTimePercentage(currentTime, videoData.duration);
-  const currentSentenceInfo = getCurrentSentenceInfo();
-
-  const handlePreviousSentence = () => {
-    if (currentSentenceIndex > 0) {
-      seekToSentence(currentSentenceIndex - 1);
-    }
-  };
-
-  const handleNextSentence = () => {
-    if (currentSentenceIndex < selectedSentences.length - 1) {
-      seekToSentence(currentSentenceIndex + 1);
-    }
-  };
 
   return (
-    <div className="h-full flex flex-col">
-      <div className="p-4 border-b border-gray-700">
-        <h2 className="text-xl font-semibold">Preview</h2>
-        
-        {/* Selected sentences info */}
-        {selectedSentences.length > 0 && (
-          <div className="mt-2 text-sm text-gray-400">
-            <div className="flex items-center justify-between">
-              <span>
-                {selectedSentences.length} sentence(s) selected
-                {currentSentenceInfo && isPlaying && (
-                  <span className="text-blue-400 ml-2">
-                    Playing: {currentSentenceInfo.current}/{currentSentenceInfo.total}
-                  </span>
-                )}
-              </span>
-              {currentSentenceInfo?.sentence && (
-                <span className="text-xs text-gray-500 max-w-md truncate">
-                  "{currentSentenceInfo.sentence.text}"
-                </span>
-              )}
-            </div>
-          </div>
-        )}
+    <div className="h-full flex flex-col min-h-0">
+      {/* Header - Responsive */}
+      <div className="p-2 md:p-4 border-b border-gray-700 flex-shrink-0">
+        <h2 className="text-lg md:text-xl font-semibold">Preview</h2>
       </div>
       
-      <div className="flex-1 flex flex-col">
-        {/* Video Container */}
-        <div className="relative bg-black flex-1 flex items-center justify-center">
+      <div className="flex-1 flex flex-col min-h-0">
+        {/* Video Container - Mobile Optimized */}
+        <div className="relative bg-black flex-1 flex items-center justify-center min-h-0 overflow-hidden">
           <video
             ref={setVideoElement}
             src={videoData.url}
-            className="max-w-full max-h-full"
+            className="w-full h-full object-contain"
+            style={{ maxHeight: '100%', maxWidth: '100%' }}
             onLoadedData={() => {
               // Video loaded, ready for playback
             }}
@@ -87,96 +43,58 @@ export const VideoPlayer: React.FC = () => {
           <HighlightOverlay />
         </div>
 
-        {/* Controls */}
-        <div className="p-4 bg-gray-800">
-          <div className="flex items-center gap-4">
-            {/* Previous Sentence Button (only when sentences are selected) */}
-            {selectedSentences.length > 0 && (
-              <button
-                onClick={handlePreviousSentence}
-                className={`p-2 rounded-full transition-colors ${
-                  currentSentenceIndex > 0
-                    ? 'bg-gray-600 hover:bg-gray-500'
-                    : 'bg-gray-700 cursor-not-allowed opacity-50'
-                }`}
-                disabled={currentSentenceIndex <= 0}
-                title="Previous sentence"
-              >
-                <SkipBack className="w-4 h-4" />
-              </button>
-            )}
-            
+        {/* Controls - Mobile Responsive */}
+        <div className="p-2 md:p-4 bg-gray-800 flex-shrink-0">
+          <div className="flex items-center gap-2 md:gap-4">
             {/* Play/Pause Button */}
             <button
               onClick={togglePlayPause}
-              className="bg-blue-600 hover:bg-blue-700 p-2 rounded-full transition-colors"
-              title={selectedSentences.length > 0 ? 'Play selected sentences' : 'Play video'}
+              className="bg-blue-600 hover:bg-blue-700 p-1.5 md:p-2 rounded-full transition-colors flex-shrink-0"
+              disabled={!videoData}
             >
-              {isPlaying ? <Pause className="w-6 h-6" /> : <Play className="w-6 h-6" />}
+              {isPlaying ? (
+                <Pause className="w-4 h-4 md:w-6 md:h-6" />
+              ) : (
+                <Play className="w-4 h-4 md:w-6 md:h-6" />
+              )}
             </button>
             
-            {/* Next Sentence Button (only when sentences are selected) */}
-            {selectedSentences.length > 0 && (
-              <button
-                onClick={handleNextSentence}
-                className={`p-2 rounded-full transition-colors ${
-                  currentSentenceIndex < selectedSentences.length - 1
-                    ? 'bg-gray-600 hover:bg-gray-500'
-                    : 'bg-gray-700 cursor-not-allowed opacity-50'
-                }`}
-                disabled={currentSentenceIndex >= selectedSentences.length - 1}
-                title="Next sentence"
-              >
-                <SkipForward className="w-4 h-4" />
-              </button>
-            )}
-            
-            <div className="flex-1">
-              <div className="text-sm text-gray-400 mb-1">
-                {formatTime(currentTime)} / {formatTime(videoData.duration)}
-                {selectedSentences.length > 0 && currentSentenceInfo && (
-                  <span className="ml-4 text-blue-400">
-                    Sentence {currentSentenceInfo.current} of {currentSentenceInfo.total}
-                  </span>
-                )}
+            {/* Progress Section */}
+            <div className="flex-1 min-w-0">
+              {/* Time Display */}
+              <div className="text-xs md:text-sm text-gray-400 mb-1 truncate">
+                <span className="hidden sm:inline">
+                  {formatTime(currentTime)} / {formatTime(videoData.duration)}
+                </span>
+                <span className="sm:hidden">
+                  {formatTime(currentTime)}
+                </span>
               </div>
               
-              <div className="relative w-full bg-gray-700 rounded-full h-2">
-                {/* Progress bar */}
+              {/* Progress Bar Container */}
+              <div className="relative w-full bg-gray-700 rounded-full h-1.5 md:h-2 touch-manipulation">
+                {/* Main Progress Bar */}
                 <div
-                  className="bg-blue-500 h-2 rounded-full transition-all"
+                  className="bg-blue-500 h-1.5 md:h-2 rounded-full transition-all"
                   style={{ width: `${progressPercentage}%` }}
                 />
                 
-                {/* Highlight markers */}
-                {selectedSentences.map((sentence, index) => {
+                {/* Highlight Markers */}
+                {selectedSentences.map((sentence) => {
                   const startPercent = getTimePercentage(sentence.startTime, videoData.duration);
                   const widthPercent = getTimePercentage(
                     sentence.endTime - sentence.startTime, 
                     videoData.duration
                   );
                   
-                  const isCurrentSentence = selectedSentences.length > 0 && 
-                    index === currentSentenceIndex && isPlaying;
-                  
                   return (
                     <div
                       key={sentence.id}
-                      className={`absolute h-2 rounded-full top-0 transition-all cursor-pointer ${
-                        isCurrentSentence 
-                          ? 'bg-yellow-400 h-3 -top-0.5' 
-                          : 'bg-green-500 hover:bg-green-400'
-                      }`}
+                      className="absolute h-1.5 md:h-2 bg-green-500 rounded-full top-0 min-w-[2px]"
                       style={{
                         left: `${startPercent}%`,
-                        width: `${widthPercent}%`,
+                        width: `${Math.max(widthPercent, 0.5)}%`, // Minimum 0.5% width for visibility
                       }}
-                      onClick={() => {
-                        if (selectedSentences.length > 0) {
-                          seekToSentence(index);
-                        }
-                      }}
-                      title={`${sentence.text} (${formatTime(sentence.startTime)} - ${formatTime(sentence.endTime)})`}
                     />
                   );
                 })}
@@ -184,25 +102,14 @@ export const VideoPlayer: React.FC = () => {
             </div>
           </div>
           
-          {/* Sentence Navigation (only when multiple sentences are selected) */}
-          {selectedSentences.length > 1 && (
-            <div className="mt-3 flex justify-center">
-              <div className="flex gap-1">
-                {selectedSentences.map((_, index) => (
-                  <button
-                    key={index}
-                    onClick={() => seekToSentence(index)}
-                    className={`w-2 h-2 rounded-full transition-all ${
-                      index === currentSentenceIndex
-                        ? 'bg-blue-500 w-4'
-                        : 'bg-gray-600 hover:bg-gray-500'
-                    }`}
-                    title={`Go to sentence ${index + 1}`}
-                  />
-                ))}
+          {/* Mobile: Additional info on separate line */}
+          <div className="mt-2 md:hidden">
+            {selectedSentences.length > 0 && (
+              <div className="text-xs text-gray-500 truncate">
+                {selectedSentences.length} sentence(s) selected
               </div>
-            </div>
-          )}
+            )}
+          </div>
         </div>
       </div>
     </div>
