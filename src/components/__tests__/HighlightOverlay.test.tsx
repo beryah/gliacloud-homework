@@ -1,271 +1,212 @@
-import { describe, it, expect, beforeEach } from 'vitest';
 import { render, screen } from '@testing-library/react';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { HighlightOverlay } from '../HighlightOverlay';
+import type { TranscriptSentence } from '../../types';
+
+// Mock store
+vi.mock('../../store/highlightStore', () => ({
+  useHighlightStore: vi.fn(),
+}));
+
 import { useHighlightStore } from '../../store/highlightStore';
-import { createMockVideoData, createMockSentence } from '../../test/utils';
+
+const mockUseHighlightStore = vi.mocked(useHighlightStore);
+
+const mockSelectedSentences: TranscriptSentence[] = [
+  {
+    id: 'sentence1',
+    text: 'Welcome to the presentation.',
+    startTime: 0,
+    endTime: 5,
+    isSelected: true,
+    isHighlighted: false,
+  },
+  {
+    id: 'sentence2',
+    text: 'Today we will discuss various topics.',
+    startTime: 10,
+    endTime: 15,
+    isSelected: true,
+    isHighlighted: false,
+  },
+];
 
 describe('HighlightOverlay Component', () => {
   beforeEach(() => {
-    useHighlightStore.getState().resetState();
+    vi.clearAllMocks();
+    
+    mockUseHighlightStore.mockReturnValue({
+      currentTime: 0,
+      selectedSentences: [],
+    });
   });
 
   it('should render nothing when no current sentence', () => {
+    mockUseHighlightStore.mockReturnValue({
+      currentTime: 20, // Outside any sentence range
+      selectedSentences: mockSelectedSentences,
+    });
+
     const { container } = render(<HighlightOverlay />);
     expect(container.firstChild).toBeNull();
   });
 
   it('should render nothing when no selected sentences', () => {
-    const mockData = createMockVideoData({
-      transcript: [{
-        id: 'section1',
-        title: 'Test Section',
-        sentences: [
-          createMockSentence({ 
-            id: 's1', 
-            startTime: 0, 
-            endTime: 5, 
-            isSelected: false // Not selected
-          })
-        ]
-      }]
+    mockUseHighlightStore.mockReturnValue({
+      currentTime: 3,
+      selectedSentences: [],
     });
-
-    useHighlightStore.getState().setVideoData(mockData);
-    useHighlightStore.getState().setCurrentTime(3); // Within sentence time range
 
     const { container } = render(<HighlightOverlay />);
     expect(container.firstChild).toBeNull();
   });
 
   it('should render nothing when current time is outside sentence range', () => {
-    const mockData = createMockVideoData({
-      transcript: [{
-        id: 'section1',
-        title: 'Test Section',
-        sentences: [
-          createMockSentence({ 
-            id: 's1', 
-            text: 'Test sentence text',
-            startTime: 10, 
-            endTime: 15, 
-            isSelected: true
-          })
-        ]
-      }]
+    mockUseHighlightStore.mockReturnValue({
+      currentTime: 7, // Between sentences (5-10 gap)
+      selectedSentences: mockSelectedSentences,
     });
-
-    useHighlightStore.getState().setVideoData(mockData);
-    useHighlightStore.getState().setCurrentTime(20); // Outside sentence range
 
     const { container } = render(<HighlightOverlay />);
     expect(container.firstChild).toBeNull();
   });
 
   it('should render overlay when current sentence is playing', () => {
-    const mockData = createMockVideoData({
-      transcript: [{
-        id: 'section1',
-        title: 'Test Section',
-        sentences: [
-          createMockSentence({ 
-            id: 's1', 
-            text: 'This is the current sentence being displayed',
-            startTime: 10, 
-            endTime: 15, 
-            isSelected: true
-          })
-        ]
-      }]
+    mockUseHighlightStore.mockReturnValue({
+      currentTime: 3, // Within first sentence (0-5)
+      selectedSentences: mockSelectedSentences,
     });
 
-    useHighlightStore.getState().setVideoData(mockData);
-    useHighlightStore.getState().setCurrentTime(12); // Within sentence time range
-
     render(<HighlightOverlay />);
-
-    expect(screen.getByText('This is the current sentence being displayed')).toBeInTheDocument();
+    
+    expect(screen.getByText('Welcome to the presentation.')).toBeInTheDocument();
   });
 
-  it('should have correct overlay styling and positioning', () => {
-    const mockData = createMockVideoData({
-      transcript: [{
-        id: 'section1',
-        title: 'Test Section',
-        sentences: [
-          createMockSentence({ 
-            id: 's1', 
-            text: 'Styled overlay text',
-            startTime: 0, 
-            endTime: 5, 
-            isSelected: true
-          })
-        ]
-      }]
+  it('should have correct responsive overlay styling and positioning', () => {
+    mockUseHighlightStore.mockReturnValue({
+      currentTime: 3,
+      selectedSentences: mockSelectedSentences,
     });
 
-    useHighlightStore.getState().setVideoData(mockData);
-    useHighlightStore.getState().setCurrentTime(3);
-
     render(<HighlightOverlay />);
-
-    const overlayContainer = screen.getByText('Styled overlay text').parentElement;
     
-    // Check for positioning classes
-    expect(overlayContainer).toHaveClass('absolute');
-    expect(overlayContainer).toHaveClass('bottom-20');
-    expect(overlayContainer).toHaveClass('left-1/2');
-    expect(overlayContainer).toHaveClass('transform');
-    expect(overlayContainer).toHaveClass('-translate-x-1/2');
+    const overlay = screen.getByText('Welcome to the presentation.').parentElement;
     
-    // Check for styling classes
-    expect(overlayContainer).toHaveClass('bg-black');
-    expect(overlayContainer).toHaveClass('bg-opacity-80');
-    expect(overlayContainer).toHaveClass('px-6');
-    expect(overlayContainer).toHaveClass('py-3');
-    expect(overlayContainer).toHaveClass('rounded-lg');
-    expect(overlayContainer).toHaveClass('max-w-4xl');
-    expect(overlayContainer).toHaveClass('mx-4');
+    // Check responsive positioning classes
+    expect(overlay).toHaveClass('absolute');
+    expect(overlay).toHaveClass('bottom-2'); // Mobile positioning
+    expect(overlay).toHaveClass('md:bottom-8'); // Desktop positioning
+    expect(overlay).toHaveClass('left-1/2');
+    expect(overlay).toHaveClass('transform');
+    expect(overlay).toHaveClass('-translate-x-1/2');
+    
+    // Check responsive styling classes
+    expect(overlay).toHaveClass('bg-black');
+    expect(overlay).toHaveClass('bg-opacity-80');
+    expect(overlay).toHaveClass('px-3'); // Mobile padding
+    expect(overlay).toHaveClass('md:px-6'); // Desktop padding
+    expect(overlay).toHaveClass('py-2'); // Mobile padding
+    expect(overlay).toHaveClass('md:py-3'); // Desktop padding
+    expect(overlay).toHaveClass('rounded-lg');
+    
+    // Check responsive width classes
+    expect(overlay).toHaveClass('max-w-xs'); // Mobile width
+    expect(overlay).toHaveClass('sm:max-w-sm'); // Small screen width
+    expect(overlay).toHaveClass('md:max-w-4xl'); // Desktop width
+    expect(overlay).toHaveClass('mx-2'); // Mobile margin
+    expect(overlay).toHaveClass('md:mx-4'); // Desktop margin
   });
 
-  it('should render text with correct styling', () => {
-    const mockData = createMockVideoData({
-      transcript: [{
-        id: 'section1',
-        title: 'Test Section',
-        sentences: [
-          createMockSentence({ 
-            id: 's1', 
-            text: 'Text with correct styling',
-            startTime: 0, 
-            endTime: 5, 
-            isSelected: true
-          })
-        ]
-      }]
+  it('should render text with correct responsive styling', () => {
+    mockUseHighlightStore.mockReturnValue({
+      currentTime: 3,
+      selectedSentences: mockSelectedSentences,
     });
 
-    useHighlightStore.getState().setVideoData(mockData);
-    useHighlightStore.getState().setCurrentTime(3);
-
     render(<HighlightOverlay />);
-
-    const textElement = screen.getByText('Text with correct styling');
+    
+    const textElement = screen.getByText('Welcome to the presentation.');
     
     expect(textElement).toHaveClass('text-white');
     expect(textElement).toHaveClass('text-center');
-    expect(textElement).toHaveClass('text-lg');
+    expect(textElement).toHaveClass('text-sm'); // Mobile text size
+    expect(textElement).toHaveClass('md:text-lg'); // Desktop text size
     expect(textElement).toHaveClass('leading-relaxed');
+    expect(textElement).toHaveClass('break-words'); // For mobile word wrapping
   });
 
   it('should update when current time changes to different sentence', () => {
-    const mockData = createMockVideoData({
-      transcript: [{
-        id: 'section1',
-        title: 'Test Section',
-        sentences: [
-          createMockSentence({ 
-            id: 's1', 
-            text: 'First sentence',
-            startTime: 0, 
-            endTime: 5, 
-            isSelected: true
-          }),
-          createMockSentence({ 
-            id: 's2', 
-            text: 'Second sentence',
-            startTime: 5, 
-            endTime: 10, 
-            isSelected: true
-          })
-        ]
-      }]
+    // Start with first sentence
+    mockUseHighlightStore.mockReturnValue({
+      currentTime: 3,
+      selectedSentences: mockSelectedSentences,
     });
 
-    useHighlightStore.getState().setVideoData(mockData);
-    useHighlightStore.getState().setCurrentTime(3); // First sentence
-
     const { rerender } = render(<HighlightOverlay />);
-    
-    expect(screen.getByText('First sentence')).toBeInTheDocument();
-    expect(screen.queryByText('Second sentence')).not.toBeInTheDocument();
+    expect(screen.getByText('Welcome to the presentation.')).toBeInTheDocument();
 
     // Change to second sentence
-    useHighlightStore.getState().setCurrentTime(7);
-    rerender(<HighlightOverlay />);
+    mockUseHighlightStore.mockReturnValue({
+      currentTime: 12,
+      selectedSentences: mockSelectedSentences,
+    });
 
-    expect(screen.queryByText('First sentence')).not.toBeInTheDocument();
-    expect(screen.getByText('Second sentence')).toBeInTheDocument();
+    rerender(<HighlightOverlay />);
+    expect(screen.getByText('Today we will discuss various topics.')).toBeInTheDocument();
+    expect(screen.queryByText('Welcome to the presentation.')).not.toBeInTheDocument();
   });
 
   it('should handle multiple selected sentences across sections', () => {
-    const mockData = createMockVideoData({
-      transcript: [
-        {
-          id: 'section1',
-          title: 'Section 1',
-          sentences: [
-            createMockSentence({ 
-              id: 's1', 
-              text: 'Sentence from section 1',
-              startTime: 0, 
-              endTime: 5, 
-              isSelected: true
-            })
-          ]
-        },
-        {
-          id: 'section2',
-          title: 'Section 2',
-          sentences: [
-            createMockSentence({ 
-              id: 's2', 
-              text: 'Sentence from section 2',
-              startTime: 10, 
-              endTime: 15, 
-              isSelected: true
-            })
-          ]
-        }
-      ]
+    const crossSectionSentences = [
+      ...mockSelectedSentences,
+      {
+        id: 'sentence3',
+        text: 'This is from another section.',
+        startTime: 20,
+        endTime: 25,
+        isSelected: true,
+        isHighlighted: false,
+      },
+    ];
+
+    mockUseHighlightStore.mockReturnValue({
+      currentTime: 22, // Within third sentence
+      selectedSentences: crossSectionSentences,
     });
 
-    useHighlightStore.getState().setVideoData(mockData);
-    useHighlightStore.getState().setCurrentTime(12); // Second section
-
     render(<HighlightOverlay />);
-
-    expect(screen.getByText('Sentence from section 2')).toBeInTheDocument();
-    expect(screen.queryByText('Sentence from section 1')).not.toBeInTheDocument();
+    
+    expect(screen.getByText('This is from another section.')).toBeInTheDocument();
   });
 
-  it('should handle long text properly', () => {
-    const longText = 'This is a very long sentence that should be displayed in the overlay and should wrap properly within the maximum width constraints of the overlay container.';
-    
-    const mockData = createMockVideoData({
-      transcript: [{
-        id: 'section1',
-        title: 'Test Section',
-        sentences: [
-          createMockSentence({ 
-            id: 's1', 
-            text: longText,
-            startTime: 0, 
-            endTime: 5, 
-            isSelected: true
-          })
-        ]
-      }]
+  it('should handle long text with responsive width constraints', () => {
+    const longTextSentence = {
+      id: 'long-sentence',
+      text: 'This is a very long sentence that might need to be wrapped or truncated on mobile devices to ensure it fits properly within the screen boundaries and maintains good readability.',
+      startTime: 0,
+      endTime: 5,
+      isSelected: true,
+      isHighlighted: false,
+    };
+
+    mockUseHighlightStore.mockReturnValue({
+      currentTime: 3,
+      selectedSentences: [longTextSentence],
     });
 
-    useHighlightStore.getState().setVideoData(mockData);
-    useHighlightStore.getState().setCurrentTime(3);
-
     render(<HighlightOverlay />);
-
-    expect(screen.getByText(longText)).toBeInTheDocument();
     
-    // Check that max-width constraint is applied
-    const overlayContainer = screen.getByText(longText).parentElement;
-    expect(overlayContainer).toHaveClass('max-w-4xl');
+    const overlay = screen.getByText(longTextSentence.text).parentElement;
+    const textElement = screen.getByText(longTextSentence.text);
+    
+    // Check that responsive width constraints are applied
+    expect(overlay).toHaveClass('max-w-xs'); // Mobile constraint
+    expect(overlay).toHaveClass('sm:max-w-sm'); // Small screen constraint
+    expect(overlay).toHaveClass('md:max-w-4xl'); // Desktop constraint
+    
+    // Check that text can break properly
+    expect(textElement).toHaveClass('break-words');
+    
+    expect(screen.getByText(longTextSentence.text)).toBeInTheDocument();
   });
 });
