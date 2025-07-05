@@ -1,8 +1,6 @@
-import './App.css'
-
-function App() {
+const App = () => {
   return (
-    <h1>Hello</h1>
+    <h1 className="text-gray-600">Hello</h1>
   )
 }
 
