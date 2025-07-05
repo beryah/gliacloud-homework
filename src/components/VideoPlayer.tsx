@@ -1,5 +1,5 @@
 import React from 'react';
-import { Play, Pause, Download } from 'lucide-react';
+import { Play, Pause } from 'lucide-react';
 import { HighlightOverlay } from './HighlightOverlay';
 import { useVideoSync } from '../hooks/useVideoSync';
 import { useHighlightStore } from '../store/highlightStore';
@@ -86,10 +86,6 @@ export const VideoPlayer: React.FC = () => {
                 })}
               </div>
             </div>
-
-            <button className="bg-gray-700 hover:bg-gray-600 p-2 rounded-lg transition-colors">
-              <Download className="w-5 h-5" />
-            </button>
           </div>
         </div>
       </div>
