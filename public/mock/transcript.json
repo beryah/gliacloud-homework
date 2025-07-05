@@ -1,0 +1,365 @@
+{
+  "videoData": {
+    "duration": 180,
+    "transcript": [
+      {
+        "id": "intro",
+        "title": "Introduction",
+        "sentences": [
+          {
+            "id": "s1",
+            "text": "Welcome to our product presentation.",
+            "startTime": 0,
+            "endTime": 3,
+            "isSelected": false
+          },
+          {
+            "id": "s2",
+            "text": "Today we will discuss the key features of our new application.",
+            "startTime": 3,
+            "endTime": 7,
+            "isSelected": true
+          },
+          {
+            "id": "s3",
+            "text": "This revolutionary tool will change how you work.",
+            "startTime": 7,
+            "endTime": 11,
+            "isSelected": true
+          }
+        ]
+      },
+      {
+        "id": "features",
+        "title": "Key Features",
+        "sentences": [
+          {
+            "id": "s4",
+            "text": "Our first major feature is real-time collaboration.",
+            "startTime": 15,
+            "endTime": 19,
+            "isSelected": false
+          },
+          {
+            "id": "s5",
+            "text": "Users can work together seamlessly across different devices.",
+            "startTime": 19,
+            "endTime": 24,
+            "isSelected": true
+          },
+          {
+            "id": "s6",
+            "text": "The interface is intuitive and user-friendly.",
+            "startTime": 24,
+            "endTime": 28,
+            "isSelected": false
+          },
+          {
+            "id": "s7",
+            "text": "Advanced AI integration makes tasks faster and more efficient.",
+            "startTime": 28,
+            "endTime": 33,
+            "isSelected": true
+          }
+        ]
+      },
+      {
+        "id": "demo",
+        "title": "Live Demo",
+        "sentences": [
+          {
+            "id": "s8",
+            "text": "Let me show you how this works in practice.",
+            "startTime": 40,
+            "endTime": 44,
+            "isSelected": false
+          },
+          {
+            "id": "s9",
+            "text": "First, we'll upload a document to the platform.",
+            "startTime": 44,
+            "endTime": 48,
+            "isSelected": true
+          },
+          {
+            "id": "s10",
+            "text": "Notice how the AI automatically analyzes the content.",
+            "startTime": 48,
+            "endTime": 52,
+            "isSelected": true
+          },
+          {
+            "id": "s11",
+            "text": "Within seconds, it provides intelligent suggestions.",
+            "startTime": 52,
+            "endTime": 56,
+            "isSelected": false
+          },
+          {
+            "id": "s12",
+            "text": "You can see the collaboration features in action here.",
+            "startTime": 56,
+            "endTime": 60,
+            "isSelected": true
+          }
+        ]
+      },
+      {
+        "id": "benefits",
+        "title": "Key Benefits",
+        "sentences": [
+          {
+            "id": "s13",
+            "text": "This solution reduces manual work by up to 70%.",
+            "startTime": 70,
+            "endTime": 74,
+            "isSelected": true
+          },
+          {
+            "id": "s14",
+            "text": "Teams report increased productivity within the first week.",
+            "startTime": 74,
+            "endTime": 78,
+            "isSelected": false
+          },
+          {
+            "id": "s15",
+            "text": "The learning curve is minimal thanks to our intuitive design.",
+            "startTime": 78,
+            "endTime": 82,
+            "isSelected": false
+          },
+          {
+            "id": "s16",
+            "text": "Security and privacy are built into every feature.",
+            "startTime": 82,
+            "endTime": 86,
+            "isSelected": true
+          }
+        ]
+      },
+      {
+        "id": "testimonials",
+        "title": "Customer Testimonials",
+        "sentences": [
+          {
+            "id": "s17",
+            "text": "Our clients love the efficiency gains they've achieved.",
+            "startTime": 95,
+            "endTime": 99,
+            "isSelected": false
+          },
+          {
+            "id": "s18",
+            "text": "Sarah from TechCorp says it's transformed their workflow.",
+            "startTime": 99,
+            "endTime": 103,
+            "isSelected": true
+          },
+          {
+            "id": "s19",
+            "text": "Mike from StartupXYZ reports 50% faster project completion.",
+            "startTime": 103,
+            "endTime": 107,
+            "isSelected": true
+          },
+          {
+            "id": "s20",
+            "text": "These results speak for themselves.",
+            "startTime": 107,
+            "endTime": 110,
+            "isSelected": false
+          }
+        ]
+      },
+      {
+        "id": "pricing",
+        "title": "Pricing & Plans",
+        "sentences": [
+          {
+            "id": "s21",
+            "text": "We offer flexible pricing to suit teams of all sizes.",
+            "startTime": 120,
+            "endTime": 124,
+            "isSelected": false
+          },
+          {
+            "id": "s22",
+            "text": "Start with our free tier for up to 5 users.",
+            "startTime": 124,
+            "endTime": 128,
+            "isSelected": true
+          },
+          {
+            "id": "s23",
+            "text": "Professional plans include advanced AI features.",
+            "startTime": 128,
+            "endTime": 132,
+            "isSelected": false
+          },
+          {
+            "id": "s24",
+            "text": "Enterprise customers get dedicated support and custom integrations.",
+            "startTime": 132,
+            "endTime": 136,
+            "isSelected": true
+          }
+        ]
+      },
+      {
+        "id": "conclusion",
+        "title": "Conclusion",
+        "sentences": [
+          {
+            "id": "s25",
+            "text": "Thank you for watching our comprehensive product demo.",
+            "startTime": 160,
+            "endTime": 164,
+            "isSelected": false
+          },
+          {
+            "id": "s26",
+            "text": "We're excited to help transform your team's productivity.",
+            "startTime": 164,
+            "endTime": 168,
+            "isSelected": true
+          },
+          {
+            "id": "s27",
+            "text": "Visit our website to start your free trial today.",
+            "startTime": 168,
+            "endTime": 172,
+            "isSelected": true
+          },
+          {
+            "id": "s28",
+            "text": "Questions? Reach out to our team anytime.",
+            "startTime": 172,
+            "endTime": 176,
+            "isSelected": false
+          }
+        ]
+      }
+    ]
+  },
+  "alternativeDatasets": {
+    "techTutorial": {
+      "duration": 240,
+      "transcript": [
+        {
+          "id": "intro",
+          "title": "Course Introduction",
+          "sentences": [
+            {
+              "id": "t1",
+              "text": "Welcome to Advanced React Development.",
+              "startTime": 0,
+              "endTime": 3,
+              "isSelected": false
+            },
+            {
+              "id": "t2",
+              "text": "In this course, we'll build a complete application from scratch.",
+              "startTime": 3,
+              "endTime": 7,
+              "isSelected": true
+            },
+            {
+              "id": "t3",
+              "text": "You'll learn modern React patterns and best practices.",
+              "startTime": 7,
+              "endTime": 11,
+              "isSelected": true
+            }
+          ]
+        },
+        {
+          "id": "setup",
+          "title": "Environment Setup",
+          "sentences": [
+            {
+              "id": "t4",
+              "text": "First, let's set up our development environment.",
+              "startTime": 15,
+              "endTime": 19,
+              "isSelected": false
+            },
+            {
+              "id": "t5",
+              "text": "We'll use Vite for faster builds and hot reload.",
+              "startTime": 19,
+              "endTime": 23,
+              "isSelected": true
+            },
+            {
+              "id": "t6",
+              "text": "TypeScript will help us catch errors early.",
+              "startTime": 23,
+              "endTime": 27,
+              "isSelected": true
+            }
+          ]
+        }
+      ]
+    },
+    "marketingPresentation": {
+      "duration": 150,
+      "transcript": [
+        {
+          "id": "intro",
+          "title": "Market Analysis",
+          "sentences": [
+            {
+              "id": "m1",
+              "text": "The market opportunity is unprecedented.",
+              "startTime": 0,
+              "endTime": 4,
+              "isSelected": true
+            },
+            {
+              "id": "m2",
+              "text": "Consumer demand has increased 300% this quarter.",
+              "startTime": 4,
+              "endTime": 8,
+              "isSelected": true
+            },
+            {
+              "id": "m3",
+              "text": "Our competitors are struggling to keep up.",
+              "startTime": 8,
+              "endTime": 12,
+              "isSelected": false
+            }
+          ]
+        },
+        {
+          "id": "strategy",
+          "title": "Go-to-Market Strategy",
+          "sentences": [
+            {
+              "id": "m4",
+              "text": "We'll launch in three phases over six months.",
+              "startTime": 20,
+              "endTime": 24,
+              "isSelected": true
+            },
+            {
+              "id": "m5",
+              "text": "Phase one targets early adopters in tech.",
+              "startTime": 24,
+              "endTime": 28,
+              "isSelected": false
+            },
+            {
+              "id": "m6",
+              "text": "Phase two expands to mainstream business users.",
+              "startTime": 28,
+              "endTime": 32,
+              "isSelected": true
+            }
+          ]
+        }
+      ]
+    }
+  }
+}
