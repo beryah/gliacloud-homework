@@ -6,7 +6,11 @@ interface HighlightStore extends HighlightState {
   videoElement: HTMLVideoElement | null;
   setVideoElement: (element: HTMLVideoElement | null) => void;
   
-  // Actions
+  // New properties for selected playback
+  isPlayingSelected: boolean;
+  currentSentenceIndex: number;
+  
+  // Original actions
   setVideoData: (data: VideoData | null) => void;
   setCurrentTime: (time: number) => void;
   setIsPlaying: (playing: boolean) => void;
@@ -15,6 +19,14 @@ interface HighlightStore extends HighlightState {
   highlightCurrentSentence: (time: number) => void;
   updateSelectedSentences: () => void;
   resetState: () => void;
+  
+  // New actions for selected playback
+  setCurrentSentenceIndex: (index: number) => void;
+  setIsPlayingSelected: (playing: boolean) => void;
+  goToNextSentence: () => void;
+  goToPreviousSentence: () => void;
+  startSelectedPlayback: () => void;
+  stopSelectedPlayback: () => void;
 }
 
 const initialState: HighlightState = {
@@ -28,6 +40,10 @@ const initialState: HighlightState = {
 export const useHighlightStore = create<HighlightStore>((set, get) => ({
   ...initialState,
   videoElement: null,
+  
+  // New state for selected playback
+  isPlayingSelected: false,
+  currentSentenceIndex: 0,
 
   setVideoElement: (element) => {
     set({ videoElement: element });
@@ -78,8 +94,13 @@ export const useHighlightStore = create<HighlightStore>((set, get) => ({
     const { videoData, selectedSentences } = get();
     if (!videoData) return;
 
-    // Find current sentence based on selected sentences
-    const currentSentence = selectedSentences.find(sentence => 
+    // If we have selected sentences, only highlight from selected sentences
+    // Otherwise highlight from all sentences
+    const sentencesToCheck = selectedSentences.length > 0 ? selectedSentences : 
+      videoData.transcript.flatMap(section => section.sentences);
+
+    // Find current sentence
+    const currentSentence = sentencesToCheck.find(sentence => 
       time >= sentence.startTime && time <= sentence.endTime
     );
 
@@ -108,10 +129,65 @@ export const useHighlightStore = create<HighlightStore>((set, get) => ({
       section.sentences.filter(sentence => sentence.isSelected)
     );
 
+    // Sort by start time to ensure proper playback order
+    selected.sort((a, b) => a.startTime - b.startTime);
+
     set({ selectedSentences: selected });
   },
 
   resetState: () => {
-    set({ ...initialState, videoElement: null });
+    set({ 
+      ...initialState, 
+      videoElement: null,
+      isPlayingSelected: false,
+      currentSentenceIndex: 0
+    });
+  },
+
+  // New actions for selected playback
+  setCurrentSentenceIndex: (index) => {
+    set({ currentSentenceIndex: index });
+  },
+  
+  setIsPlayingSelected: (playing) => {
+    set({ isPlayingSelected: playing });
+  },
+  
+  startSelectedPlayback: () => {
+    const { selectedSentences } = get();
+    if (selectedSentences.length === 0) return;
+    
+    set({ 
+      isPlayingSelected: true,
+      currentSentenceIndex: 0 
+    });
+  },
+  
+  stopSelectedPlayback: () => {
+    set({ 
+      isPlayingSelected: false,
+      currentSentenceIndex: 0 
+    });
+  },
+  
+  goToNextSentence: () => {
+    const { selectedSentences, currentSentenceIndex } = get();
+    if (currentSentenceIndex < selectedSentences.length - 1) {
+      set({ currentSentenceIndex: currentSentenceIndex + 1 });
+      return true; // Has next sentence
+    } else {
+      // End of selected sentences, stop playback
+      get().stopSelectedPlayback();
+      return false; // No more sentences
+    }
+  },
+  
+  goToPreviousSentence: () => {
+    const { currentSentenceIndex } = get();
+    if (currentSentenceIndex > 0) {
+      set({ currentSentenceIndex: currentSentenceIndex - 1 });
+      return true;
+    }
+    return false;
   },
 }));
