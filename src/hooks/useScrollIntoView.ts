@@ -13,7 +13,7 @@ export const useScrollIntoView = () => {
   const lastHighlightedRef = useRef<string | null>(null);
 
   useEffect(() => {
-    if (!videoData) return;
+    if (!videoData || !videoData.transcript) return;
     
     let currentSentence;
     

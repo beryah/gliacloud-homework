@@ -1,6 +1,7 @@
 import { renderHook, act } from '@testing-library/react';
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { useScrollIntoView } from '../useScrollIntoView';
+import type { VideoData, TranscriptSentence } from '../../types';
 
 // Mock dependencies
 vi.mock('../../utils/scrollHelper', () => ({
@@ -18,6 +19,70 @@ import { useHighlightStore } from '../../store/highlightStore';
 const mockScrollToElement = vi.mocked(scrollToElement);
 const mockUseHighlightStore = vi.mocked(useHighlightStore);
 
+// Helper function to create mock video data
+const createMockVideoData = (): VideoData => ({
+  url: 'blob:test-video-url',
+  duration: 120,
+  transcript: [
+    {
+      id: 'section1',
+      title: 'Introduction',
+      sentences: [
+        {
+          id: 'sentence1',
+          text: 'Welcome to the presentation.',
+          startTime: 0,
+          endTime: 5,
+          isSelected: false,
+          isHighlighted: false,
+        },
+        {
+          id: 'sentence2',
+          text: 'Today we will discuss various topics.',
+          startTime: 5,
+          endTime: 10,
+          isSelected: false,
+          isHighlighted: false,
+        },
+      ],
+    },
+    {
+      id: 'section2',
+      title: 'Main Content',
+      sentences: [
+        {
+          id: 'sentence3',
+          text: 'Let us begin with the first topic.',
+          startTime: 15,
+          endTime: 20,
+          isSelected: false,
+          isHighlighted: false,
+        },
+      ],
+    },
+  ],
+});
+
+// Helper function to create mock selected sentences
+const createMockSelectedSentences = (): TranscriptSentence[] => [
+  {
+    id: 'sentence1',
+    text: 'Welcome to the presentation.',
+    startTime: 0,
+    endTime: 5,
+    isSelected: true,
+    isHighlighted: false,
+  },
+  {
+    id: 'sentence3',
+    text: 'Let us begin with the first topic.',
+    startTime: 15,
+    endTime: 20,
+    isSelected: true,
+    isHighlighted: false,
+  },
+];
+
 describe('useScrollIntoView', () => {
   beforeEach(() => {
     vi.clearAllMocks();
@@ -25,9 +90,11 @@ describe('useScrollIntoView', () => {
     
     // Default mock implementation
     mockUseHighlightStore.mockReturnValue({
-      videoData: { id: 'test-video' },
+      videoData: null,
       currentTime: 0,
       selectedSentences: [],
+      currentSentenceIndex: 0,
+      isPlayingSelected: false,
     });
   });
 
@@ -35,220 +102,441 @@ describe('useScrollIntoView', () => {
     vi.useRealTimers();
   });
 
-  it('should return scrollToSentence and scrollToSection functions', () => {
-    const { result } = renderHook(() => useScrollIntoView());
+  describe('Return values', () => {
+    it('should return scrollToSentence and scrollToSection functions', () => {
+      const { result } = renderHook(() => useScrollIntoView());
 
-    expect(result.current.scrollToSentence).toBeInstanceOf(Function);
-    expect(result.current.scrollToSection).toBeInstanceOf(Function);
+      expect(result.current.scrollToSentence).toBeInstanceOf(Function);
+      expect(result.current.scrollToSection).toBeInstanceOf(Function);
+      expect(result.current.scrollToCurrentSelectedSentence).toBeInstanceOf(Function);
+    });
   });
 
-  it('should not scroll when videoData is null', () => {
-    mockUseHighlightStore.mockReturnValue({
-      videoData: null,
-      currentTime: 5,
-      selectedSentences: [
-        { id: 'sentence1', startTime: 0, endTime: 10 }
-      ],
+  describe('No video data scenarios', () => {
+    it('should not scroll when videoData is null', () => {
+      mockUseHighlightStore.mockReturnValue({
+        videoData: null,
+        currentTime: 5,
+        selectedSentences: createMockSelectedSentences(),
+        currentSentenceIndex: 0,
+        isPlayingSelected: false,
+      });
+
+      renderHook(() => useScrollIntoView());
+
+      act(() => {
+        vi.advanceTimersByTime(200);
+      });
+
+      expect(mockScrollToElement).not.toHaveBeenCalled();
     });
 
-    renderHook(() => useScrollIntoView());
+    it('should not scroll when videoData has no transcript', () => {
+      mockUseHighlightStore.mockReturnValue({
+        videoData: { url: 'test', duration: 120, transcript: undefined } as any,
+        currentTime: 5,
+        selectedSentences: createMockSelectedSentences(),
+        currentSentenceIndex: 0,
+        isPlayingSelected: false,
+      });
 
-    act(() => {
-      vi.advanceTimersByTime(200);
+      renderHook(() => useScrollIntoView());
+
+      act(() => {
+        vi.advanceTimersByTime(200);
+      });
+
+      expect(mockScrollToElement).not.toHaveBeenCalled();
     });
-
-    expect(mockScrollToElement).not.toHaveBeenCalled();
   });
 
-  it('should not scroll when selectedSentences is empty', () => {
-    mockUseHighlightStore.mockReturnValue({
-      videoData: { id: 'test-video' },
-      currentTime: 5,
-      selectedSentences: [],
+  describe('Selected sentences playback mode', () => {
+    it('should scroll to current sentence by index when playing selected sentences', () => {
+      const mockVideoData = createMockVideoData();
+      const mockSelectedSentences = createMockSelectedSentences();
+
+      mockUseHighlightStore.mockReturnValue({
+        videoData: mockVideoData,
+        currentTime: 3,
+        selectedSentences: mockSelectedSentences,
+        currentSentenceIndex: 0,
+        isPlayingSelected: true,
+      });
+
+      renderHook(() => useScrollIntoView());
+
+      act(() => {
+        vi.advanceTimersByTime(150);
+      });
+
+      expect(mockScrollToElement).toHaveBeenCalledWith(
+        'sentence-sentence1',
+        'smooth',
+        'center'
+      );
     });
 
-    renderHook(() => useScrollIntoView());
+    it('should scroll to different sentence when sentence index changes', () => {
+      const mockVideoData = createMockVideoData();
+      const mockSelectedSentences = createMockSelectedSentences();
 
-    act(() => {
-      vi.advanceTimersByTime(200);
+      mockUseHighlightStore.mockReturnValue({
+        videoData: mockVideoData,
+        currentTime: 3,
+        selectedSentences: mockSelectedSentences,
+        currentSentenceIndex: 0,
+        isPlayingSelected: true,
+      });
+
+      const { rerender } = renderHook(() => useScrollIntoView());
+
+      act(() => {
+        vi.advanceTimersByTime(150);
+      });
+
+      expect(mockScrollToElement).toHaveBeenCalledWith(
+        'sentence-sentence1',
+        'smooth',
+        'center'
+      );
+
+      // Clear previous calls and change to next sentence
+      mockScrollToElement.mockClear();
+      mockUseHighlightStore.mockReturnValue({
+        videoData: mockVideoData,
+        currentTime: 18,
+        selectedSentences: mockSelectedSentences,
+        currentSentenceIndex: 1,
+        isPlayingSelected: true,
+      });
+
+      rerender();
+
+      act(() => {
+        vi.advanceTimersByTime(150);
+      });
+
+      expect(mockScrollToElement).toHaveBeenCalledWith(
+        'sentence-sentence3',
+        'smooth',
+        'center'
+      );
     });
 
-    expect(mockScrollToElement).not.toHaveBeenCalled();
+    it('should not scroll to same sentence twice in selected mode', () => {
+      const mockVideoData = createMockVideoData();
+      const mockSelectedSentences = createMockSelectedSentences();
+
+      mockUseHighlightStore.mockReturnValue({
+        videoData: mockVideoData,
+        currentTime: 3,
+        selectedSentences: mockSelectedSentences,
+        currentSentenceIndex: 0,
+        isPlayingSelected: true,
+      });
+
+      const { rerender } = renderHook(() => useScrollIntoView());
+
+      // First render should trigger scroll
+      act(() => {
+        vi.advanceTimersByTime(150);
+      });
+
+      expect(mockScrollToElement).toHaveBeenCalledTimes(1);
+
+      // Clear mocks and rerender with same data
+      mockScrollToElement.mockClear();
+      rerender();
+
+      act(() => {
+        vi.advanceTimersByTime(150);
+      });
+
+      // Should not scroll again for the same sentence
+      expect(mockScrollToElement).not.toHaveBeenCalled();
+    });
   });
 
-  it('should scroll to current sentence when it becomes active', () => {
-    mockUseHighlightStore.mockReturnValue({
-      videoData: { id: 'test-video' },
-      currentTime: 5,
-      selectedSentences: [
-        { id: 'sentence1', startTime: 0, endTime: 10 },
-        { id: 'sentence2', startTime: 15, endTime: 20 }
-      ],
+  describe('Time-based scrolling mode', () => {
+    it('should scroll based on current time when not playing selected sentences', () => {
+      const mockVideoData = createMockVideoData();
+
+      mockUseHighlightStore.mockReturnValue({
+        videoData: mockVideoData,
+        currentTime: 7, // Should match sentence2 (5-10)
+        selectedSentences: [],
+        currentSentenceIndex: 0,
+        isPlayingSelected: false,
+      });
+
+      renderHook(() => useScrollIntoView());
+
+      act(() => {
+        vi.advanceTimersByTime(150);
+      });
+
+      expect(mockScrollToElement).toHaveBeenCalledWith(
+        'sentence-sentence2',
+        'smooth',
+        'center'
+      );
     });
 
-    renderHook(() => useScrollIntoView());
+    it('should scroll based on current time within selected sentences when not playing', () => {
+      const mockVideoData = createMockVideoData();
+      const mockSelectedSentences = createMockSelectedSentences();
 
-    act(() => {
-      vi.advanceTimersByTime(200);
+      mockUseHighlightStore.mockReturnValue({
+        videoData: mockVideoData,
+        currentTime: 17, // Should match sentence3 from selected sentences
+        selectedSentences: mockSelectedSentences,
+        currentSentenceIndex: 0,
+        isPlayingSelected: false, // Not playing selected, so use time-based lookup
+      });
+
+      renderHook(() => useScrollIntoView());
+
+      act(() => {
+        vi.advanceTimersByTime(150);
+      });
+
+      expect(mockScrollToElement).toHaveBeenCalledWith(
+        'sentence-sentence3',
+        'smooth',
+        'center'
+      );
     });
 
-    expect(mockScrollToElement).toHaveBeenCalledWith(
-      'sentence-sentence1',
-      'smooth',
-      'center'
-    );
+    it('should not scroll when no sentence matches current time', () => {
+      const mockVideoData = createMockVideoData();
+
+      mockUseHighlightStore.mockReturnValue({
+        videoData: mockVideoData,
+        currentTime: 25, // No sentence covers this time
+        selectedSentences: [],
+        currentSentenceIndex: 0,
+        isPlayingSelected: false,
+      });
+
+      renderHook(() => useScrollIntoView());
+
+      act(() => {
+        vi.advanceTimersByTime(150);
+      });
+
+      expect(mockScrollToElement).not.toHaveBeenCalled();
+    });
   });
 
-  it('should not scroll to the same sentence twice', () => {
-    mockUseHighlightStore.mockReturnValue({
-      videoData: { id: 'test-video' },
-      currentTime: 5,
-      selectedSentences: [
-        { id: 'sentence1', startTime: 0, endTime: 10 }
-      ],
+  describe('Timing behavior', () => {
+    it('should scroll with 100ms delay', () => {
+      const mockVideoData = createMockVideoData();
+
+      mockUseHighlightStore.mockReturnValue({
+        videoData: mockVideoData,
+        currentTime: 3, // Should match sentence1 (0-5)
+        selectedSentences: [],
+        currentSentenceIndex: 0,
+        isPlayingSelected: false,
+      });
+
+      renderHook(() => useScrollIntoView());
+
+      // Should not scroll immediately
+      expect(mockScrollToElement).not.toHaveBeenCalled();
+
+      // Should not scroll before 100ms
+      act(() => {
+        vi.advanceTimersByTime(50);
+      });
+      expect(mockScrollToElement).not.toHaveBeenCalled();
+
+      // Should scroll after 100ms
+      act(() => {
+        vi.advanceTimersByTime(100);
+      });
+      expect(mockScrollToElement).toHaveBeenCalledWith(
+        'sentence-sentence1',
+        'smooth',
+        'center'
+      );
     });
 
-    const { rerender } = renderHook(() => useScrollIntoView());
+    it('should not scroll multiple times for rapid changes within delay period', () => {
+      const mockVideoData = createMockVideoData();
 
-    // First render should trigger scroll
-    act(() => {
-      vi.advanceTimersByTime(200);
+      mockUseHighlightStore.mockReturnValue({
+        videoData: mockVideoData,
+        currentTime: 3,
+        selectedSentences: [],
+        currentSentenceIndex: 0,
+        isPlayingSelected: false,
+      });
+
+      const { rerender } = renderHook(() => useScrollIntoView());
+
+      // Change time quickly before delay expires
+      act(() => {
+        vi.advanceTimersByTime(50);
+      });
+
+      mockUseHighlightStore.mockReturnValue({
+        videoData: mockVideoData,
+        currentTime: 4, // Still same sentence
+        selectedSentences: [],
+        currentSentenceIndex: 0,
+        isPlayingSelected: false,
+      });
+
+      rerender();
+
+      act(() => {
+        vi.advanceTimersByTime(100);
+      });
+
+      // Should only scroll once despite multiple changes
+      expect(mockScrollToElement).toHaveBeenCalledTimes(1);
     });
-
-    expect(mockScrollToElement).toHaveBeenCalledTimes(1);
-
-    // Clear mocks and rerender with same data
-    mockScrollToElement.mockClear();
-    rerender();
-
-    act(() => {
-      vi.advanceTimersByTime(200);
-    });
-
-    // Should not scroll again for the same sentence
-    expect(mockScrollToElement).not.toHaveBeenCalled();
   });
 
-  it('should scroll when current sentence changes', () => {
-    const { rerender } = renderHook(() => useScrollIntoView());
+  describe('Manual scroll functions', () => {
+    it('should call scrollToElement with correct parameters for scrollToSentence', () => {
+      const { result } = renderHook(() => useScrollIntoView());
 
-    // First sentence is active
-    mockUseHighlightStore.mockReturnValue({
-      videoData: { id: 'test-video' },
-      currentTime: 5,
-      selectedSentences: [
-        { id: 'sentence1', startTime: 0, endTime: 10 },
-        { id: 'sentence2', startTime: 15, endTime: 20 }
-      ],
+      act(() => {
+        result.current.scrollToSentence('test-sentence');
+      });
+
+      expect(mockScrollToElement).toHaveBeenCalledWith(
+        'sentence-test-sentence',
+        'smooth',
+        'center'
+      );
     });
 
-    rerender();
+    it('should call scrollToElement with correct parameters for scrollToSection', () => {
+      const { result } = renderHook(() => useScrollIntoView());
 
-    act(() => {
-      vi.advanceTimersByTime(200);
+      act(() => {
+        result.current.scrollToSection('test-section');
+      });
+
+      expect(mockScrollToElement).toHaveBeenCalledWith(
+        'section-test-section',
+        'smooth',
+        'start'
+      );
     });
 
-    expect(mockScrollToElement).toHaveBeenCalledWith(
-      'sentence-sentence1',
-      'smooth',
-      'center'
-    );
+    it('should scroll to current selected sentence when available', () => {
+      const mockVideoData = createMockVideoData();
+      const mockSelectedSentences = createMockSelectedSentences();
 
-    // Clear mocks and change to second sentence
-    mockScrollToElement.mockClear();
-    mockUseHighlightStore.mockReturnValue({
-      videoData: { id: 'test-video' },
-      currentTime: 16,
-      selectedSentences: [
-        { id: 'sentence1', startTime: 0, endTime: 10 },
-        { id: 'sentence2', startTime: 15, endTime: 20 }
-      ],
+      mockUseHighlightStore.mockReturnValue({
+        videoData: mockVideoData,
+        currentTime: 3,
+        selectedSentences: mockSelectedSentences,
+        currentSentenceIndex: 1,
+        isPlayingSelected: false,
+      });
+
+      const { result } = renderHook(() => useScrollIntoView());
+
+      act(() => {
+        result.current.scrollToCurrentSelectedSentence();
+      });
+
+      expect(mockScrollToElement).toHaveBeenCalledWith(
+        'sentence-sentence3',
+        'smooth',
+        'center'
+      );
     });
 
-    rerender();
+    it('should not scroll when no selected sentences available', () => {
+      mockUseHighlightStore.mockReturnValue({
+        videoData: createMockVideoData(),
+        currentTime: 3,
+        selectedSentences: [],
+        currentSentenceIndex: 0,
+        isPlayingSelected: false,
+      });
 
-    act(() => {
-      vi.advanceTimersByTime(200);
+      const { result } = renderHook(() => useScrollIntoView());
+
+      act(() => {
+        result.current.scrollToCurrentSelectedSentence();
+      });
+
+      expect(mockScrollToElement).not.toHaveBeenCalled();
     });
-
-    expect(mockScrollToElement).toHaveBeenCalledWith(
-      'sentence-sentence2',
-      'smooth',
-      'center'
-    );
   });
 
-  it('should scroll with 100ms delay', () => {
-    mockUseHighlightStore.mockReturnValue({
-      videoData: { id: 'test-video' },
-      currentTime: 5,
-      selectedSentences: [
-        { id: 'sentence1', startTime: 0, endTime: 10 }
-      ],
+  describe('Edge cases', () => {
+    it('should handle empty transcript gracefully', () => {
+      mockUseHighlightStore.mockReturnValue({
+        videoData: {
+          url: 'test',
+          duration: 120,
+          transcript: [],
+        },
+        currentTime: 5,
+        selectedSentences: [],
+        currentSentenceIndex: 0,
+        isPlayingSelected: false,
+      });
+
+      renderHook(() => useScrollIntoView());
+
+      act(() => {
+        vi.advanceTimersByTime(150);
+      });
+
+      expect(mockScrollToElement).not.toHaveBeenCalled();
     });
 
-    renderHook(() => useScrollIntoView());
+    it('should handle out of bounds sentence index', () => {
+      const mockVideoData = createMockVideoData();
+      const mockSelectedSentences = createMockSelectedSentences();
 
-    // Should not scroll immediately
-    expect(mockScrollToElement).not.toHaveBeenCalled();
+      mockUseHighlightStore.mockReturnValue({
+        videoData: mockVideoData,
+        currentTime: 3,
+        selectedSentences: mockSelectedSentences,
+        currentSentenceIndex: 999, // Out of bounds
+        isPlayingSelected: true,
+      });
 
-    // Should not scroll before 100ms
-    act(() => {
-      vi.advanceTimersByTime(50);
-    });
-    expect(mockScrollToElement).not.toHaveBeenCalled();
+      renderHook(() => useScrollIntoView());
 
-    // Should scroll after 100ms
-    act(() => {
-      vi.advanceTimersByTime(100);
-    });
-    expect(mockScrollToElement).toHaveBeenCalled();
-  });
+      act(() => {
+        vi.advanceTimersByTime(150);
+      });
 
-  it('should call scrollToElement with correct parameters when scrollToSentence is called', () => {
-    const { result } = renderHook(() => useScrollIntoView());
-
-    act(() => {
-      result.current.scrollToSentence('test-sentence');
+      // Should not crash and not scroll
+      expect(mockScrollToElement).not.toHaveBeenCalled();
     });
 
-    expect(mockScrollToElement).toHaveBeenCalledWith(
-      'sentence-test-sentence',
-      'smooth',
-      'center'
-    );
-  });
+    it('should handle negative sentence index', () => {
+      const mockVideoData = createMockVideoData();
+      const mockSelectedSentences = createMockSelectedSentences();
 
-  it('should call scrollToElement with correct parameters when scrollToSection is called', () => {
-    const { result } = renderHook(() => useScrollIntoView());
+      mockUseHighlightStore.mockReturnValue({
+        videoData: mockVideoData,
+        currentTime: 3,
+        selectedSentences: mockSelectedSentences,
+        currentSentenceIndex: -1, // Negative index
+        isPlayingSelected: true,
+      });
 
-    act(() => {
-      result.current.scrollToSection('test-section');
+      renderHook(() => useScrollIntoView());
+
+      act(() => {
+        vi.advanceTimersByTime(150);
+      });
+
+      // Should not crash and not scroll
+      expect(mockScrollToElement).not.toHaveBeenCalled();
     });
-
-    expect(mockScrollToElement).toHaveBeenCalledWith(
-      'section-test-section',
-      'smooth',
-      'start'
-    );
-  });
-
-  it('should not scroll when no current sentence matches the time', () => {
-    mockUseHighlightStore.mockReturnValue({
-      videoData: { id: 'test-video' },
-      currentTime: 25, // Outside any sentence time range
-      selectedSentences: [
-        { id: 'sentence1', startTime: 0, endTime: 10 },
-        { id: 'sentence2', startTime: 15, endTime: 20 }
-      ],
-    });
-
-    renderHook(() => useScrollIntoView());
-
-    act(() => {
-      vi.advanceTimersByTime(200);
-    });
-
-    expect(mockScrollToElement).not.toHaveBeenCalled();
   });
 });

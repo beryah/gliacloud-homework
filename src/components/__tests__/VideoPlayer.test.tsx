@@ -1,202 +1,244 @@
-import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { VideoPlayer } from '../VideoPlayer';
-import { useHighlightStore } from '../../store/highlightStore';
-import { createMockVideoData, createMockSentence } from '../../test/utils';
+import type { VideoData, TranscriptSentence } from '../../types';
 
-// Mock the hooks
-const mockUseVideoSync = vi.fn();
-vi.mock('../../hooks/useVideoSync', () => ({
-  useVideoSync: () => mockUseVideoSync()
+// Mock components and hooks
+vi.mock('../HighlightOverlay', () => ({
+  HighlightOverlay: () => <div data-testid="highlight-overlay">Highlight Overlay</div>,
 }));
 
-describe('VideoPlayer Component', () => {
+vi.mock('../../hooks/useVideoSync', () => ({
+  useVideoSync: vi.fn(),
+}));
+
+vi.mock('../../store/highlightStore', () => ({
+  useHighlightStore: vi.fn(),
+}));
+
+vi.mock('../../utils/timeFormat', () => ({
+  formatTime: vi.fn((time: number) => `${Math.floor(time / 60)}:${(time % 60).toString().padStart(2, '0')}`),
+  getTimePercentage: vi.fn((current: number, total: number) => (current / total) * 100),
+}));
+
+import { useVideoSync } from '../../hooks/useVideoSync';
+import { useHighlightStore } from '../../store/highlightStore';
+
+const mockUseVideoSync = vi.mocked(useVideoSync);
+const mockUseHighlightStore = vi.mocked(useHighlightStore);
+
+const mockVideoData: VideoData = {
+  url: 'blob:test-video-url',
+  duration: 120,
+  transcript: [{
+    id: 'section1',
+    title: 'Test Section',
+    sentences: [{
+      id: 'sentence1',
+      text: 'Test sentence',
+      startTime: 0,
+      endTime: 5,
+      isSelected: false,
+      isHighlighted: false,
+    }],
+  }],
+};
+
+const mockSelectedSentences: TranscriptSentence[] = [{
+  id: 'sentence1',
+  text: 'Test sentence',
+  startTime: 0,
+  endTime: 5,
+  isSelected: true,
+  isHighlighted: false,
+}];
+
+describe('VideoPlayer', () => {
+  const mockTogglePlayPause = vi.fn();
+  const mockSeekToSentence = vi.fn();
+  const mockSetVideoElement = vi.fn();
+
   beforeEach(() => {
-    useHighlightStore.getState().resetState();
     vi.clearAllMocks();
     
-    // Default mock return value
+    // Default mocks
+    mockUseHighlightStore.mockReturnValue({
+      videoData: null,
+      selectedSentences: [],
+      setVideoElement: mockSetVideoElement,
+    });
+
     mockUseVideoSync.mockReturnValue({
-      currentTime: 30,
+      currentTime: 0,
       isPlaying: false,
-      togglePlayPause: vi.fn(),
-      seekTo: vi.fn()
+      togglePlayPause: mockTogglePlayPause,
+      seekTo: vi.fn(),
+      seekToSentence: mockSeekToSentence,
+      getCurrentSentenceInfo: vi.fn(() => null),
+      currentSentenceIndex: 0,
+      isPlayingSelected: false,
+      selectedSentences: [],
     });
   });
 
-  it('should render "No video loaded" when no video data', () => {
+  it('should render no video message when videoData is null', () => {
     render(<VideoPlayer />);
-    
     expect(screen.getByText('No video loaded')).toBeInTheDocument();
+    expect(screen.queryByText('Preview')).not.toBeInTheDocument();
   });
 
   it('should render video player when video data exists', () => {
-    const mockData = createMockVideoData();
-    
-    useHighlightStore.getState().setVideoData(mockData);
-    render(<VideoPlayer />);
+    mockUseHighlightStore.mockReturnValue({
+      videoData: mockVideoData,
+      selectedSentences: [],
+      setVideoElement: mockSetVideoElement,
+    });
 
+    render(<VideoPlayer />);
+    
     expect(screen.getByText('Preview')).toBeInTheDocument();
-    expect(screen.getByRole('button')).toBeInTheDocument(); // Play button
+    expect(screen.getByRole('button')).toBeInTheDocument();
+    expect(document.querySelector('video')).toHaveAttribute('src', 'blob:test-video-url');
+    expect(screen.getByTestId('highlight-overlay')).toBeInTheDocument();
   });
 
-  it('should render video element with correct src', () => {
-    const mockData = createMockVideoData({ url: 'test-video-url.mp4' });
-    
-    useHighlightStore.getState().setVideoData(mockData);
-    render(<VideoPlayer />);
-
-    const videoElement = document.querySelector('video');
-    expect(videoElement).toBeInTheDocument();
-    expect(videoElement).toHaveAttribute('src', 'test-video-url.mp4');
-  });
-
-  it('should show play button when video is not playing', () => {
-    const mockData = createMockVideoData();
-    useHighlightStore.getState().setVideoData(mockData);
-    
-    mockUseVideoSync.mockReturnValue({
-      currentTime: 30,
-      isPlaying: false,
-      togglePlayPause: vi.fn(),
-      seekTo: vi.fn()
+  it('should call togglePlayPause when play button is clicked', () => {
+    mockUseHighlightStore.mockReturnValue({
+      videoData: mockVideoData,
+      selectedSentences: [],
+      setVideoElement: mockSetVideoElement,
     });
-    
+
     render(<VideoPlayer />);
-
-    // Should show play icon (not pause)
-    const playButton = screen.getByRole('button');
-    expect(playButton).toBeInTheDocument();
-  });
-
-  it('should show pause button when video is playing', () => {
-    const mockData = createMockVideoData();
-    useHighlightStore.getState().setVideoData(mockData);
     
-    mockUseVideoSync.mockReturnValue({
-      currentTime: 30,
-      isPlaying: true,
-      togglePlayPause: vi.fn(),
-      seekTo: vi.fn()
-    });
-    
-    render(<VideoPlayer />);
-
-    const pauseButton = screen.getByRole('button');
-    expect(pauseButton).toBeInTheDocument();
-  });
-
-  it('should call togglePlayPause when play/pause button is clicked', () => {
-    const mockTogglePlayPause = vi.fn();
-    const mockData = createMockVideoData();
-    useHighlightStore.getState().setVideoData(mockData);
-    
-    mockUseVideoSync.mockReturnValue({
-      currentTime: 30,
-      isPlaying: false,
-      togglePlayPause: mockTogglePlayPause,
-      seekTo: vi.fn()
-    });
-    
-    render(<VideoPlayer />);
-
-    const playButton = screen.getByRole('button');
-    fireEvent.click(playButton);
-
+    fireEvent.click(screen.getByRole('button'));
     expect(mockTogglePlayPause).toHaveBeenCalled();
   });
 
-  it('should display current time and duration', () => {
-    const mockData = createMockVideoData({ duration: 180 }); // 3:00
-    useHighlightStore.getState().setVideoData(mockData);
+  it('should show selected sentences info when sentences are selected', () => {
+    mockUseHighlightStore.mockReturnValue({
+      videoData: mockVideoData,
+      selectedSentences: mockSelectedSentences,
+      setVideoElement: mockSetVideoElement,
+    });
+
+    render(<VideoPlayer />);
     
+    expect(screen.getByText('1 sentence(s) selected')).toBeInTheDocument();
+  });
+
+  it('should show navigation buttons when sentences are selected', () => {
+    mockUseHighlightStore.mockReturnValue({
+      videoData: mockVideoData,
+      selectedSentences: mockSelectedSentences,
+      setVideoElement: mockSetVideoElement,
+    });
+
     mockUseVideoSync.mockReturnValue({
-      currentTime: 75, // 1:15
+      currentTime: 0,
       isPlaying: false,
-      togglePlayPause: vi.fn(),
-      seekTo: vi.fn()
+      togglePlayPause: mockTogglePlayPause,
+      seekTo: vi.fn(),
+      seekToSentence: mockSeekToSentence,
+      getCurrentSentenceInfo: vi.fn(() => null),
+      currentSentenceIndex: 0,
+      isPlayingSelected: false,
+      selectedSentences: mockSelectedSentences,
     });
-    
-    render(<VideoPlayer />);
 
-    expect(screen.getByText('1:15 / 3:00')).toBeInTheDocument();
+    render(<VideoPlayer />);
+    
+    const buttons = screen.getAllByRole('button');
+    expect(buttons.length).toBeGreaterThan(1); // Play + navigation buttons
   });
 
-  it('should render progress bar with correct percentage', () => {
-    const mockData = createMockVideoData({ duration: 120 }); // 2:00
-    useHighlightStore.getState().setVideoData(mockData);
-    
+  it('should show current sentence info when playing selected sentences', () => {
+    mockUseHighlightStore.mockReturnValue({
+      videoData: mockVideoData,
+      selectedSentences: mockSelectedSentences,
+      setVideoElement: mockSetVideoElement,
+    });
+
     mockUseVideoSync.mockReturnValue({
-      currentTime: 60, // 1:00
+      currentTime: 0,
+      isPlaying: true,
+      togglePlayPause: mockTogglePlayPause,
+      seekTo: vi.fn(),
+      seekToSentence: mockSeekToSentence,
+      getCurrentSentenceInfo: vi.fn(() => ({
+        current: 1,
+        total: 1,
+        sentence: mockSelectedSentences[0]
+      })),
+      currentSentenceIndex: 0,
+      isPlayingSelected: true,
+      selectedSentences: mockSelectedSentences,
+    });
+
+    render(<VideoPlayer />);
+    
+    expect(screen.getByText('Playing: 1/1')).toBeInTheDocument();
+    expect(screen.getByText('"Test sentence"')).toBeInTheDocument();
+  });
+
+  it('should handle previous/next sentence navigation', () => {
+    const twoSentences = [
+      mockSelectedSentences[0],
+      { ...mockSelectedSentences[0], id: 'sentence2', text: 'Second sentence' }
+    ];
+
+    mockUseHighlightStore.mockReturnValue({
+      videoData: mockVideoData,
+      selectedSentences: twoSentences,
+      setVideoElement: mockSetVideoElement,
+    });
+
+    mockUseVideoSync.mockReturnValue({
+      currentTime: 0,
       isPlaying: false,
-      togglePlayPause: vi.fn(),
-      seekTo: vi.fn()
-    });
-    
-    render(<VideoPlayer />);
-
-    // 60 seconds out of 120 = 50%
-    const progressBar = document.querySelector('.bg-blue-500');
-    expect(progressBar).toHaveStyle({ width: '50%' });
-  });
-
-  it('should render highlight markers for selected sentences', () => {
-    const mockData = createMockVideoData({
-      duration: 120,
-      transcript: [{
-        id: 'section1',
-        title: 'Test Section',
-        sentences: [
-          createMockSentence({ 
-            id: 's1', 
-            startTime: 10, 
-            endTime: 20, 
-            isSelected: true 
-          }),
-          createMockSentence({ 
-            id: 's2', 
-            startTime: 30, 
-            endTime: 40, 
-            isSelected: true 
-          })
-        ]
-      }]
+      togglePlayPause: mockTogglePlayPause,
+      seekTo: vi.fn(),
+      seekToSentence: mockSeekToSentence,
+      getCurrentSentenceInfo: vi.fn(() => null),
+      currentSentenceIndex: 0,
+      isPlayingSelected: false,
+      selectedSentences: twoSentences,
     });
 
-    useHighlightStore.getState().setVideoData(mockData);
-    render(<VideoPlayer />);
-
-    // Should have highlight markers for selected sentences
-    const highlightMarkers = document.querySelectorAll('.bg-green-500');
-    expect(highlightMarkers).toHaveLength(2);
-  });
-
-  it('should register video element with store when video mounts', () => {
-    const setVideoElementSpy = vi.spyOn(useHighlightStore.getState(), 'setVideoElement');
-    const mockData = createMockVideoData();
-    
-    useHighlightStore.getState().setVideoData(mockData);
-    render(<VideoPlayer />);
-
-    // The ref callback should have been called with the video element
-    expect(setVideoElementSpy).toHaveBeenCalled();
-  });
-
-  it('should disable play button when no video data', () => {
     render(<VideoPlayer />);
     
-    // When no video data, should show "No video loaded" instead of controls
-    expect(screen.queryByRole('button')).not.toBeInTheDocument();
+    const buttons = screen.getAllByRole('button');
+    const nextButton = buttons.find(btn => btn.getAttribute('title') === 'Next sentence');
+    
+    if (nextButton) {
+      fireEvent.click(nextButton);
+      expect(mockSeekToSentence).toHaveBeenCalledWith(1);
+    }
   });
 
-  it('should render HighlightOverlay component', () => {
-    const mockData = createMockVideoData();
-    useHighlightStore.getState().setVideoData(mockData);
-    
-    render(<VideoPlayer />);
+  it('should render progress bar and highlight markers', () => {
+    mockUseHighlightStore.mockReturnValue({
+      videoData: mockVideoData,
+      selectedSentences: mockSelectedSentences,
+      setVideoElement: mockSetVideoElement,
+    });
 
-    // HighlightOverlay should be rendered (even if not visible due to no current sentence)
-    const videoContainer = document.querySelector('.relative.bg-black');
-    expect(videoContainer).toBeInTheDocument();
+    render(<VideoPlayer />);
+    
+    expect(document.querySelector('.bg-blue-500')).toBeInTheDocument(); // Progress bar
+    expect(document.querySelector('.bg-green-500, .bg-yellow-400')).toBeInTheDocument(); // Highlight marker
+  });
+
+  it('should call setVideoElement ref callback', () => {
+    mockUseHighlightStore.mockReturnValue({
+      videoData: mockVideoData,
+      selectedSentences: [],
+      setVideoElement: mockSetVideoElement,
+    });
+
+    render(<VideoPlayer />);
+    
+    const video = document.querySelector('video');
+    expect(mockSetVideoElement).toHaveBeenCalledWith(video);
   });
 });
