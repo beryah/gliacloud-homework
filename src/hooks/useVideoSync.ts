@@ -1,8 +1,5 @@
-// src/hooks/useVideoSync.ts
-
 import { useCallback, useRef, useEffect } from 'react';
 import { useHighlightStore } from '../store/highlightStore';
-import type { VideoPlayerRef } from '../types';
 
 export const useVideoSync = () => {
   const videoRef = useRef<HTMLVideoElement>(null);
@@ -12,19 +9,6 @@ export const useVideoSync = () => {
     setCurrentTime,
     setIsPlaying
   } = useHighlightStore();
-
-  // Create video player interface
-  const playerRef = useRef<VideoPlayerRef>({
-    play: () => videoRef.current?.play(),
-    pause: () => videoRef.current?.pause(),
-    seek: (time: number) => {
-      if (videoRef.current) {
-        videoRef.current.currentTime = time;
-        setCurrentTime(time);
-      }
-    },
-    getCurrentTime: () => videoRef.current?.currentTime || 0
-  });
 
   // Handle video time updates
   useEffect(() => {
@@ -68,7 +52,6 @@ export const useVideoSync = () => {
 
   return {
     videoRef,
-    playerRef: playerRef.current,
     currentTime,
     isPlaying,
     togglePlayPause,

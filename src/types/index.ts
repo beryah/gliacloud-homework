@@ -29,10 +29,3 @@ export interface HighlightState {
   isProcessing: boolean;
   selectedSentences: TranscriptSentence[];
 }
-
-export interface VideoPlayerRef {
-  play: () => void;
-  pause: () => void;
-  seek: (time: number) => void;
-  getCurrentTime: () => number;
-}
