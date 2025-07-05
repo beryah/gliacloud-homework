@@ -4,6 +4,11 @@
  * @returns Formatted time string (e.g., "1:23", "10:45")
  */
 export const formatTime = (seconds: number): string => {
+  // Handle negative values and NaN
+  if (seconds < 0 || isNaN(seconds)) {
+    return '0:00';
+  }
+  
   const mins = Math.floor(seconds / 60);
   const secs = Math.floor(seconds % 60);
   return `${mins}:${secs.toString().padStart(2, '0')}`;
