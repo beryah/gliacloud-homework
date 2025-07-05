@@ -1,6 +1,8 @@
+import VideoHighlightEditor from "./components/VideoHighlightEditor"
+
 const App = () => {
   return (
-    <h1 className="text-gray-600">Hello</h1>
+    <VideoHighlightEditor />
   )
 }
 
