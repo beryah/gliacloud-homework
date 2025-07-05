@@ -1,9 +1,9 @@
-import { useCallback, useRef, useEffect } from 'react';
+import { useCallback, useEffect } from 'react';
 import { useHighlightStore } from '../store/highlightStore';
 
 export const useVideoSync = () => {
-  const videoRef = useRef<HTMLVideoElement>(null);
   const {
+    videoElement,
     currentTime,
     isPlaying,
     setCurrentTime,
@@ -12,46 +12,44 @@ export const useVideoSync = () => {
 
   // Handle video time updates
   useEffect(() => {
-    const video = videoRef.current;
-    if (!video) return;
+    if (!videoElement) return;
 
     const handleTimeUpdate = () => {
-      setCurrentTime(video.currentTime);
+      setCurrentTime(videoElement.currentTime);
     };
 
     const handlePlay = () => setIsPlaying(true);
     const handlePause = () => setIsPlaying(false);
 
-    video.addEventListener('timeupdate', handleTimeUpdate);
-    video.addEventListener('play', handlePlay);
-    video.addEventListener('pause', handlePause);
+    videoElement.addEventListener('timeupdate', handleTimeUpdate);
+    videoElement.addEventListener('play', handlePlay);
+    videoElement.addEventListener('pause', handlePause);
 
     return () => {
-      video.removeEventListener('timeupdate', handleTimeUpdate);
-      video.removeEventListener('play', handlePlay);
-      video.removeEventListener('pause', handlePause);
+      videoElement.removeEventListener('timeupdate', handleTimeUpdate);
+      videoElement.removeEventListener('play', handlePlay);
+      videoElement.removeEventListener('pause', handlePause);
     };
-  }, [setCurrentTime, setIsPlaying]);
+  }, [videoElement, setCurrentTime, setIsPlaying]);
 
   const togglePlayPause = useCallback(() => {
-    if (videoRef.current) {
+    if (videoElement) {
       if (isPlaying) {
-        videoRef.current.pause();
+        videoElement.pause();
       } else {
-        videoRef.current.play();
+        videoElement.play();
       }
     }
-  }, [isPlaying]);
+  }, [videoElement, isPlaying]);
 
   const seekTo = useCallback((time: number) => {
-    if (videoRef.current) {
-      videoRef.current.currentTime = time;
+    if (videoElement) {
+      videoElement.currentTime = time;
       setCurrentTime(time);
     }
-  }, [setCurrentTime]);
+  }, [videoElement, setCurrentTime]);
 
   return {
-    videoRef,
     currentTime,
     isPlaying,
     togglePlayPause,

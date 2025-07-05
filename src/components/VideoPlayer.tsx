@@ -6,8 +6,8 @@ import { useHighlightStore } from '../store/highlightStore';
 import { formatTime, getTimePercentage } from '../utils/timeFormat';
 
 export const VideoPlayer: React.FC = () => {
-  const { videoData, selectedSentences } = useHighlightStore();
-  const { videoRef, currentTime, isPlaying, togglePlayPause } = useVideoSync();
+  const { videoData, selectedSentences, setVideoElement } = useHighlightStore();
+  const { currentTime, isPlaying, togglePlayPause } = useVideoSync();
 
   if (!videoData) {
     return (
@@ -29,13 +29,11 @@ export const VideoPlayer: React.FC = () => {
         {/* Video Container */}
         <div className="relative bg-black flex-1 flex items-center justify-center">
           <video
-            ref={videoRef}
+            ref={setVideoElement}
             src={videoData.url}
             className="max-w-full max-h-full"
             onLoadedData={() => {
-              if (videoRef.current) {
-                videoRef.current.currentTime = 0;
-              }
+              // Video loaded, ready for playback
             }}
           />
           

@@ -2,6 +2,10 @@ import { create } from 'zustand';
 import type { VideoData, HighlightState } from '../types';
 
 interface HighlightStore extends HighlightState {
+  // Video element management
+  videoElement: HTMLVideoElement | null;
+  setVideoElement: (element: HTMLVideoElement | null) => void;
+  
   // Actions
   setVideoData: (data: VideoData | null) => void;
   setCurrentTime: (time: number) => void;
@@ -23,6 +27,11 @@ const initialState: HighlightState = {
 
 export const useHighlightStore = create<HighlightStore>((set, get) => ({
   ...initialState,
+  videoElement: null,
+
+  setVideoElement: (element) => {
+    set({ videoElement: element });
+  },
 
   setVideoData: (data) => {
     set({ videoData: data });
@@ -103,6 +112,6 @@ export const useHighlightStore = create<HighlightStore>((set, get) => ({
   },
 
   resetState: () => {
-    set(initialState);
+    set({ ...initialState, videoElement: null });
   },
 }));
