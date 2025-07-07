@@ -3,7 +3,8 @@ import { Play, Pause } from 'lucide-react';
 import { HighlightOverlay } from './HighlightOverlay';
 import { useVideoSync } from '../hooks/useVideoSync';
 import { useHighlightStore } from '../store/highlightStore';
-import { formatTime, getTimePercentage } from '../utils/timeFormat';
+import { formatTime } from '../utils/timeFormat';
+import { ProgressBar } from './ProgressBar';
 
 export const VideoPlayer: React.FC = () => {
   const { videoData, selectedSentences, setVideoElement } = useHighlightStore();
@@ -17,7 +18,6 @@ export const VideoPlayer: React.FC = () => {
     );
   }
 
-  const progressPercentage = getTimePercentage(currentTime, videoData.duration);
 
   return (
     <div className="h-full flex flex-col min-h-0">
@@ -71,34 +71,11 @@ export const VideoPlayer: React.FC = () => {
                 </span>
               </div>
               
-              {/* Progress Bar Container */}
-              <div className="relative w-full bg-gray-700 rounded-full h-1.5 md:h-2 touch-manipulation">
-                {/* Main Progress Bar */}
-                <div
-                  className="bg-blue-500 h-1.5 md:h-2 rounded-full transition-all"
-                  style={{ width: `${progressPercentage}%` }}
-                />
-                
-                {/* Highlight Markers */}
-                {selectedSentences.map((sentence) => {
-                  const startPercent = getTimePercentage(sentence.startTime, videoData.duration);
-                  const widthPercent = getTimePercentage(
-                    sentence.endTime - sentence.startTime, 
-                    videoData.duration
-                  );
-                  
-                  return (
-                    <div
-                      key={sentence.id}
-                      className="absolute h-1.5 md:h-2 bg-green-500 rounded-full top-0 min-w-[2px]"
-                      style={{
-                        left: `${startPercent}%`,
-                        width: `${Math.max(widthPercent, 0.5)}%`, // Minimum 0.5% width for visibility
-                      }}
-                    />
-                  );
-                })}
-              </div>
+              <ProgressBar
+                currentTime={currentTime}
+                duration={videoData.duration}
+                selectedSentences={selectedSentences}
+              />
             </div>
           </div>
           
