@@ -229,7 +229,7 @@ describe('VideoPlayer', () => {
 
     render(<VideoPlayer />);
     
-    expect(document.querySelector('.bg-blue-500')).toBeInTheDocument(); // Progress bar
+    expect(screen.getByTestId('progress-bar')).toBeInTheDocument();
     expect(document.querySelector('.bg-green-500, .bg-yellow-400')).toBeInTheDocument(); // Highlight marker
   });
 
